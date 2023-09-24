@@ -27,23 +27,23 @@ public ref struct BlockBufferJsonReader {
 	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderOptions options) {
 		this.stream = stream;
 		this.blockBuffer = blockBuffer;
-		jsonState = new JsonReaderState(options);
+		this.jsonState = new JsonReaderState(options);
 	}
 
 	public bool Read() {
-		switch (state) {
+		switch(this.state) {
 			case State.CLOSED:
 				return false;
 			case State.READING:
 			case State.FINAL_READ:
-				if (Reader.Read()) return true;
-				if (state == State.FINAL_READ) {
-					state = State.CLOSED;
+				if(this.Reader.Read()) return true;
+				if(this.state == State.FINAL_READ) {
+					this.state = State.CLOSED;
 					return false;
 				}
 				goto case State.INIT;
 			case State.INIT:
-				acquireReader();
+				this.acquireReader();
 				goto case State.READING;
 		}
 		Debug.Assert(false, "This point is unreachable");
@@ -52,20 +52,20 @@ public ref struct BlockBufferJsonReader {
 
 	private void acquireReader() {
 		int preRead = 0;
-		Debug.Assert(state != State.FINAL_READ, "Shouldn't be in final read here");
-		if (state != State.INIT) {
-			if (Reader.BytesConsumed == 0)
+		Debug.Assert(this.state != State.FINAL_READ, "Shouldn't be in final read here");
+		if(this.state != State.INIT) {
+			if(this.Reader.BytesConsumed == 0)
 				throw new Exception("JSON value appears to exceed the bounds of the block buffer. Increase the buffer size or decrease your JSON value size.");
-			jsonState = Reader.CurrentState;
-			Span<byte> remainingSlice = readSlice[(int) Reader.BytesConsumed..];
-			remainingSlice.CopyTo(blockBuffer);
+			this.jsonState = this.Reader.CurrentState;
+			Span<byte> remainingSlice = this.readSlice[(int) this.Reader.BytesConsumed..];
+			remainingSlice.CopyTo(this.blockBuffer);
 			preRead = remainingSlice.Length;
 		}
 
-		int read = stream.Read(blockBuffer[preRead..]);
-		readSlice = blockBuffer[..(preRead+read)];
-		state = readSlice.Length == 0 ? State.FINAL_READ : State.READING;
+		int read = this.stream.Read(this.blockBuffer[preRead..]);
+		this.readSlice = this.blockBuffer[..(preRead+read)];
+		this.state = this.readSlice.Length == 0 ? State.FINAL_READ : State.READING;
 
-		Reader = new Utf8JsonReader(readSlice, readSlice.Length == 0, jsonState);
+		this.Reader = new Utf8JsonReader(this.readSlice, this.readSlice.Length == 0, this.jsonState);
 	}
 }
