@@ -37,6 +37,6 @@ public class LocaleService : IServiceInit {
 	public void LoadLocale(string technicalName) {
 		PluginLog.Verbose($"Reading localization file for '{technicalName}'");
 		if (this.Data == null || this.Data.MetaData.TechnicalName != technicalName)
-			this.Data = LocaleDataLoader.LoadData(technicalName);
+			this.Data = LocaleLoader.LoadData(technicalName);
 	}
 }
