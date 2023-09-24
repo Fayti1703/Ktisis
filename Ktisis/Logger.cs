@@ -7,11 +7,11 @@ using JetBrains.Annotations;
 namespace Ktisis;
 
 /**
-	 * <summary>
-	 * Very silly little logger abstraction for the <b>ONE</b> person on this project
-	 * who doesn't own the game they're helping mod.
-	 * </summary>
-	 */
+ * <summary>
+ * Very silly little logger abstraction for the <b>ONE</b> person on this project
+ * who doesn't own the game they're helping mod.
+ * </summary>
+ */
 internal static class Logger {
 	/** <summary>If <c>true</c>, this execution is outside of the Dalamud Environment and should not use the Dalamud Logger.</summary> */
 	internal static bool IsExternal { get; set; } = false;
