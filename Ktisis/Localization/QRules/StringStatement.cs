@@ -84,6 +84,7 @@ public class StringStatement : QRuleStatement {
 		return parts.ToArray();
 	}
 
+	[DebuggerDisplay("{isVar ? \"Variable\": \"Literal\", nq}: \"{value, nq}\"")]
 	private struct StringPart {
 		public string value;
 		public bool isVar;
