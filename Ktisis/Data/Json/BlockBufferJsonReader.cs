@@ -42,6 +42,16 @@ public ref struct BlockBufferJsonReader {
 		this.jsonState = new JsonReaderState(options);
 	}
 
+	/**
+	 * <summary>Resume reading from a given state.</summary>
+	 * <remarks><c>stream</c> must return the next bytes to pass into the <c>Utf8JsonReader</c>, including any bytes that were already read out of the original stream.</remarks>
+	 */
+	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderState state) {
+		this.stream = stream;
+		this.blockBuffer = blockBuffer;
+		this.jsonState = state;
+	}
+
 	public bool Read() {
 		switch(this._stage) {
 			case Stage.CLOSED:
