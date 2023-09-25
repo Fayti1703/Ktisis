@@ -25,7 +25,7 @@ public class LocaleDataLoader {
 			typeof(LocaleDataLoader),
 			"Data." + technicalName + ".json"
 		);
-		if (stream == null)
+		if(stream == null)
 			throw new Exception($"Cannot find data file '{technicalName}'");
 		return stream;
 	}
@@ -35,15 +35,14 @@ public class LocaleDataLoader {
 		var reader = new BlockBufferJsonReader(stream, stackalloc byte[4096], readerOptions);
 
 		reader.Read();
-		if (reader.Reader.TokenType != JsonTokenType.StartObject)
+		if(reader.Reader.TokenType != JsonTokenType.StartObject)
 			throw new Exception($"Locale Data file '{technicalName}.json' does not contain a top-level object.");
 
-		while (reader.Read()) {
-			switch (reader.Reader.TokenType) {
+		while(reader.Read()) {
+			switch(reader.Reader.TokenType) {
 				case JsonTokenType.PropertyName:
-					if (reader.Reader.GetString() == "$meta") {
+					if(reader.Reader.GetString() == "$meta")
 						return ReadMetaObject(technicalName, ref reader);
-					}
 					reader.SkipIt();
 					break;
 				case JsonTokenType.EndObject:
@@ -140,7 +139,7 @@ public class LocaleDataLoader {
 		var reader = new BlockBufferJsonReader(stream, stackalloc byte[4096], readerOptions);
 
 		reader.Read();
-		if (reader.Reader.TokenType != JsonTokenType.StartObject)
+		if(reader.Reader.TokenType != JsonTokenType.StartObject)
 			throw new Exception($"Locale Data file '{technicalName}' does not contain a top-level object.");
 
 		Dictionary<string, string> translationData = new();
@@ -150,12 +149,12 @@ public class LocaleDataLoader {
 
 		int metaCount = 0;
 
-		while (reader.Read()) {
-			switch (reader.Reader.TokenType) {
+		while(reader.Read()) {
+			switch(reader.Reader.TokenType) {
 				case JsonTokenType.PropertyName:
-					if (keyStack.Count == 0 && reader.Reader.GetString() == "$meta") {
+					if(keyStack.Count == 0 && reader.Reader.GetString() == "$meta") {
 						metaCount++;
-						if (meta == null)
+						if(meta == null)
 							meta = ReadMetaObject(technicalName, ref reader);
 						else
 							reader.SkipIt();
@@ -163,11 +162,10 @@ public class LocaleDataLoader {
 						reader.SkipIt();
 					} else {
 						keyStack.TryPeek(out string? prevKey);
-						if (prevKey != null) {
+						if(prevKey != null)
 							currentKey = prevKey + "." + reader.Reader.GetString();
-						} else {
+						else
 							currentKey = reader.Reader.GetString();
-						}
 					}
 					break;
 				case JsonTokenType.String:
@@ -177,7 +175,7 @@ public class LocaleDataLoader {
 					keyStack.Push(currentKey!);
 					break;
 				case JsonTokenType.EndObject:
-					if (keyStack.TryPop(out string? _)) /* non-top-level object */
+					if(keyStack.TryPop(out string? _)) /* non-top-level object */
 						break;
 					goto done;
 				case JsonTokenType.StartArray:
