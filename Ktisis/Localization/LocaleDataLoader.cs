@@ -11,7 +11,7 @@ using Ktisis.Data.Json;
 
 namespace Ktisis.Localization;
 
-public class LocaleDataLoader {
+public static class LocaleDataLoader {
 
 	/* Being lenient for backwards compatibility, but you will get an annoyed look if you put in C/C++-style comments in your JSON. */
 	private readonly static JsonReaderOptions readerOptions = new() {
@@ -19,7 +19,7 @@ public class LocaleDataLoader {
 		CommentHandling = JsonCommentHandling.Skip
 	};
 
-	private Stream GetResourceStream(string technicalName) {
+	private static Stream GetResourceStream(string technicalName) {
 		/* TODO: Type-scope once we get the namespaces sorted out */
 		Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(
 			typeof(LocaleDataLoader),
@@ -30,7 +30,7 @@ public class LocaleDataLoader {
 		return stream;
 	}
 
-	public LocaleMetaData LoadMeta(string technicalName) {
+	public static LocaleMetaData LoadMeta(string technicalName) {
 		using Stream stream = GetResourceStream(technicalName);
 		var reader = new BlockBufferJsonReader(stream, stackalloc byte[4096], readerOptions);
 
@@ -54,7 +54,7 @@ public class LocaleDataLoader {
 		}
 		throw new Exception($"Locale Data file '{technicalName}.json' is missing its meta data (top-level '$meta' key not found)");
 	}
-	private LocaleMetaData ReadMetaObject(string technicalName, ref BlockBufferJsonReader reader) {
+	private static LocaleMetaData ReadMetaObject(string technicalName, ref BlockBufferJsonReader reader) {
 		reader.Read();
 		if(reader.Reader.TokenType != JsonTokenType.StartObject)
 			throw new Exception($"Locale Data file '{technicalName}.json' has a non-object at the top-level '$meta' key.");
@@ -130,11 +130,11 @@ public class LocaleDataLoader {
 		return new LocaleMetaData(technicalName, displayName, selfName, maintainers);
 	}
 
-	public LocaleData LoadData(string technicalName) => _LoadData(technicalName, null);
+	public static LocaleData LoadData(string technicalName) => _LoadData(technicalName, null);
 
-	public LocaleData LoadData(LocaleMetaData metaData) => _LoadData(metaData.TechnicalName, metaData);
+	public static LocaleData LoadData(LocaleMetaData metaData) => _LoadData(metaData.TechnicalName, metaData);
 
-	private LocaleData _LoadData(string technicalName, LocaleMetaData? meta) {
+	private static LocaleData _LoadData(string technicalName, LocaleMetaData? meta) {
 		using Stream stream = GetResourceStream(technicalName);
 		var reader = new BlockBufferJsonReader(stream, stackalloc byte[4096], readerOptions);
 
@@ -209,7 +209,7 @@ public class LocaleDataLoader {
 		return new LocaleData(meta!, translationData);
 	}
 
-	private void WarnUnsupported(string technicalName, string elementType, string currentKey) {
+	private static void WarnUnsupported(string technicalName, string elementType, string currentKey) {
 		Logger.Warning("Locale Data File '{0}.json' has an unsupported {1} at '%.{2}'.", technicalName, elementType, currentKey);
 	}
 

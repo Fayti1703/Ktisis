@@ -13,8 +13,6 @@ public class LocaleService : IServiceInit {
 
 	private readonly ConfigService _cfg;
 	
-	private readonly LocaleDataLoader Loader = new();
-	
 	private LocaleData? Data;
 
 	public LocaleService(ConfigService _cfg) {
@@ -39,6 +37,6 @@ public class LocaleService : IServiceInit {
 	public void LoadLocale(string technicalName) {
 		PluginLog.Verbose($"Reading localization file for '{technicalName}'");
 		if (this.Data == null || this.Data.MetaData.TechnicalName != technicalName)
-			this.Data = this.Loader.LoadData(technicalName);
+			this.Data = LocaleDataLoader.LoadData(technicalName);
 	}
 }
