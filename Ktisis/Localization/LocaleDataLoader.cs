@@ -81,6 +81,7 @@ public static class LocaleDataLoader {
 								throw new Exception($"Locale data file '{technicalName}.json' has an invalid '%.$meta.selfName' value (not a string).");
 							selfName = reader.Reader.GetString();
 							break;
+						/* FIXME: "contributors", not "maintainers". */
 						case "maintainers":
 							if(reader.Reader.TokenType != JsonTokenType.StartArray)
 								throw new Exception($"Locale data file '{technicalName}.json' has an invalid '%.$meta.maintainers' value (not an array).");
