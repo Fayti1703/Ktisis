@@ -36,11 +36,8 @@ public ref struct BlockBufferJsonReader {
 	private Stage _stage = Stage.INIT;
 	private HashSet<BufferRecorder>? recorders = null;
 
-	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderOptions options) {
-		this.stream = stream;
-		this.blockBuffer = blockBuffer;
-		this.jsonState = new JsonReaderState(options);
-	}
+	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderOptions options)
+		: this(stream, blockBuffer, new JsonReaderState(options)) {}
 
 	/**
 	 * <summary>Resume reading from a given state.</summary>
