@@ -8,6 +8,8 @@ using System.Reflection;
 using System.Text.Json;
 
 using Ktisis.Data.Json;
+using Ktisis.Localization.Loading;
+using Ktisis.Localization.QRules;
 
 namespace Ktisis.Localization;
 
@@ -142,7 +144,7 @@ public static class LocaleDataLoader {
 		if(reader.Reader.TokenType != JsonTokenType.StartObject)
 			throw new Exception($"Locale Data file '{technicalName}' does not contain a top-level object.");
 
-		Dictionary<string, string> translationData = new();
+		Dictionary<string, QRuleStatement> translationData = new();
 
 		Stack<string> keyStack = new();
 		string? currentKey = null;
@@ -169,7 +171,7 @@ public static class LocaleDataLoader {
 					}
 					break;
 				case JsonTokenType.String:
-					translationData.Add(currentKey!, reader.Reader.GetString()!);
+					translationData.Add(currentKey!, QRuleLoader.LoadStatement(ref reader, currentKey!, technicalName));
 					break;
 				case JsonTokenType.StartObject:
 					keyStack.Push(currentKey!);
