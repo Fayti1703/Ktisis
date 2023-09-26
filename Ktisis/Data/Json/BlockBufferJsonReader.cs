@@ -80,6 +80,17 @@ public ref struct BlockBufferJsonReader {
 		return stream;
 	}
 
+	public void CancelBufferRecorder(BufferRecorder recorder) {
+		if(!(this.recorders?.Contains(recorder) ?? false))
+			throw new ArgumentException("Passed recorder is not attached to this reader", nameof(recorder));
+		this.recorders.Remove(recorder);
+
+		/* drop the recorded data */
+		recorder.stream.SetLength(0);
+		recorder.stream.Capacity = 0;
+		recorder.stream = null!;
+	}
+
 	private void acquireReader() {
 		int preRead = 0;
 		Debug.Assert(this._stage != Stage.FINAL_READ, "Shouldn't be in final read here");
