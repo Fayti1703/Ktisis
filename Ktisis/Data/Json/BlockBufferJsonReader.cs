@@ -53,26 +53,28 @@ public ref struct BlockBufferJsonReader {
 	private HashSet<BufferRecorder>? recorders = null;
 	private int bytesShifted = 0;
 	private JsonReaderState saveState;
+	public readonly bool IsFinal;
 
-	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderOptions options)
-		: this(stream, blockBuffer, new JsonReaderState(options)) {}
+	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderOptions options, bool isFinal = true)
+		: this(stream, blockBuffer, new JsonReaderState(options), isFinal) {}
 
 	/**
 	 * <summary>Resume reading from a given state.</summary>
 	 * <remarks><c>stream</c> must return the next bytes to pass into the <c>Utf8JsonReader</c>, including any bytes that were already read out of the original stream.</remarks>
 	 */
-	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderState state) {
+	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderState state, bool isFinal = true) {
 		this.stream = stream;
 		this.blockBuffer = blockBuffer;
 		this.jsonState = state;
 		this.saveState = state;
+		this.IsFinal = isFinal;
 	}
 
 	/**
 	 * <summary>Resume reading from a saved buffer state.</summary>
 	 * <remarks><c>stream</c> and <c>blockBuffer</c> must be identical to the values passed to the instance the <c>state</c> comes from.</remarks>
 	 */
-	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, BufferState state) : this(stream, blockBuffer, state.jsonState) {
+	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, BufferState state, bool isFinal = true) : this(stream, blockBuffer, state.jsonState, isFinal) {
 		this.readSlice = this.blockBuffer[state.readStart..state.readEnd];
 		this._stage = Stage.REINIT;
 	}
@@ -161,6 +163,6 @@ public ref struct BlockBufferJsonReader {
 		}
 
 		this._stage = this.readSlice.Length == 0 ? Stage.FINAL_READ : Stage.READING;
-		this.Reader = new Utf8JsonReader(this.readSlice, this.readSlice.Length == 0, this.jsonState);
+		this.Reader = new Utf8JsonReader(this.readSlice, this.readSlice.Length == 0 && this.IsFinal, this.jsonState);
 	}
 }
