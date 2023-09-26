@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Ktisis.Common.Utility;
 
@@ -11,6 +13,19 @@ namespace Ktisis.Data.Json;
  * <summary>Synchronous JSON-Reader-over-Stream abstraction that uses a potentially stack-allocated block buffer.</summary>
  */
 public ref struct BlockBufferJsonReader {
+
+	public readonly struct BufferState {
+		internal readonly JsonReaderState jsonState;
+		internal readonly int readStart;
+		internal readonly int readEnd;
+
+		internal BufferState(ref BlockBufferJsonReader reader) {
+			this.jsonState = reader.saveState;
+			int sliceOffset = (int) Unsafe.ByteOffset(ref MemoryMarshal.GetReference(reader.blockBuffer), ref MemoryMarshal.GetReference(reader.readSlice));
+			this.readStart = sliceOffset + reader.bytesShifted;
+			this.readEnd = sliceOffset + reader.readSlice.Length;
+		}
+	}
 
 	public class BufferRecorder {
 		internal MemoryStream stream = new();
@@ -23,6 +38,7 @@ public ref struct BlockBufferJsonReader {
 
 	private enum Stage {
 		INIT,
+		REINIT,
 		READING,
 		FINAL_READ,
 		CLOSED
@@ -36,6 +52,7 @@ public ref struct BlockBufferJsonReader {
 	private Stage _stage = Stage.INIT;
 	private HashSet<BufferRecorder>? recorders = null;
 	private int bytesShifted = 0;
+	private JsonReaderState saveState;
 
 	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderOptions options)
 		: this(stream, blockBuffer, new JsonReaderState(options)) {}
@@ -48,7 +65,20 @@ public ref struct BlockBufferJsonReader {
 		this.stream = stream;
 		this.blockBuffer = blockBuffer;
 		this.jsonState = state;
+		this.saveState = state;
 	}
+
+	/**
+	 * <summary>Resume reading from a saved buffer state.</summary>
+	 * <remarks><c>stream</c> and <c>blockBuffer</c> must be identical to the values passed to the instance the <c>state</c> comes from.</remarks>
+	 */
+	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, BufferState state) : this(stream, blockBuffer, state.jsonState) {
+		this.readSlice = this.blockBuffer[state.readStart..state.readEnd];
+		this._stage = Stage.REINIT;
+	}
+
+	/** <summary>Save the reader state in a way that can be resumed later with the same <c>blockBuffer</c> and <c>stream</c></summary> */
+	public BufferState SaveBufferState() => new(ref this);
 
 	public bool Read() {
 		switch(this._stage) {
@@ -56,6 +86,7 @@ public ref struct BlockBufferJsonReader {
 				return false;
 			case Stage.READING:
 			case Stage.FINAL_READ:
+				this.saveState = this.Reader.CurrentState;
 				this.bytesShifted = (int) this.Reader.BytesConsumed;
 				if(this.Reader.Read()) return true;
 				if(this._stage == Stage.FINAL_READ) {
@@ -64,6 +95,7 @@ public ref struct BlockBufferJsonReader {
 				}
 				goto case Stage.INIT;
 			case Stage.INIT:
+			case Stage.REINIT:
 				this.acquireReader();
 				goto case Stage.READING;
 		}
@@ -102,30 +134,33 @@ public ref struct BlockBufferJsonReader {
 	}
 
 	private void acquireReader() {
-		int preRead = 0;
-		Debug.Assert(this._stage != Stage.FINAL_READ, "Shouldn't be in final read here");
-		if(this._stage != Stage.INIT) {
-			if(this.Reader.BytesConsumed == 0)
-				throw new Exception("JSON value appears to exceed the bounds of the block buffer. Increase the buffer size or decrease your JSON value size.");
-			this.jsonState = this.Reader.CurrentState;
-			if(this.recorders != null) {
-				Span<byte> readSlice = this.readSlice[..(int) this.Reader.BytesConsumed];
-				foreach(BufferRecorder recorder in this.recorders) {
-					/* NOTE: This may be a zero-length slice, but
-					   we ensure that it is not out of range. */
-					recorder.stream.Write(readSlice[recorder.bufferPosition..]);
-					recorder.bufferPosition = 0;
+		if(this._stage != Stage.REINIT) {
+			int preRead = 0;
+			Debug.Assert(this._stage != Stage.FINAL_READ, "Shouldn't be in final read here");
+			if(this._stage != Stage.INIT) {
+				if(this.Reader.BytesConsumed == 0)
+					throw new Exception("JSON value appears to exceed the bounds of the block buffer. Increase the buffer size or decrease your JSON value size.");
+				this.jsonState = this.Reader.CurrentState;
+				if(this.recorders != null) {
+					Span<byte> readSlice = this.readSlice[..(int) this.Reader.BytesConsumed];
+					foreach(BufferRecorder recorder in this.recorders) {
+						/* NOTE: This may be a zero-length slice, but
+						   we ensure that it is not out of range. */
+						recorder.stream.Write(readSlice[recorder.bufferPosition..]);
+						recorder.bufferPosition = 0;
+					}
 				}
+
+				Span<byte> remainingSlice = this.readSlice[(int) this.Reader.BytesConsumed..];
+				remainingSlice.CopyTo(this.blockBuffer);
+				preRead = remainingSlice.Length;
 			}
-			Span<byte> remainingSlice = this.readSlice[(int) this.Reader.BytesConsumed..];
-			remainingSlice.CopyTo(this.blockBuffer);
-			preRead = remainingSlice.Length;
+
+			int read = this.stream.Read(this.blockBuffer[preRead..]);
+			this.readSlice = this.blockBuffer[..(preRead + read)];
 		}
 
-		int read = this.stream.Read(this.blockBuffer[preRead..]);
-		this.readSlice = this.blockBuffer[..(preRead+read)];
 		this._stage = this.readSlice.Length == 0 ? Stage.FINAL_READ : Stage.READING;
-
 		this.Reader = new Utf8JsonReader(this.readSlice, this.readSlice.Length == 0, this.jsonState);
 	}
 }
