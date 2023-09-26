@@ -83,6 +83,9 @@ public ref struct BlockBufferJsonReader {
 	public BufferState SaveBufferState() => new(ref this);
 
 	public bool Read() {
+		/* possible only via `default(BlockBufferJsonReader)` */
+		if(this.stream == null)
+			return false;
 		switch(this._stage) {
 			case Stage.CLOSED:
 				return false;
