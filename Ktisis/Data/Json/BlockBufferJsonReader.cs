@@ -35,6 +35,7 @@ public ref struct BlockBufferJsonReader {
 	private JsonReaderState jsonState;
 	private Stage _stage = Stage.INIT;
 	private HashSet<BufferRecorder>? recorders = null;
+	private int bytesShifted = 0;
 
 	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderOptions options)
 		: this(stream, blockBuffer, new JsonReaderState(options)) {}
@@ -55,6 +56,7 @@ public ref struct BlockBufferJsonReader {
 				return false;
 			case Stage.READING:
 			case Stage.FINAL_READ:
+				this.bytesShifted = (int) this.Reader.BytesConsumed;
 				if(this.Reader.Read()) return true;
 				if(this._stage == Stage.FINAL_READ) {
 					this._stage = Stage.CLOSED;
@@ -79,7 +81,8 @@ public ref struct BlockBufferJsonReader {
 	public MemoryStream FinishBufferRecorder(BufferRecorder recorder) {
 		if(!(this.recorders?.Contains(recorder) ?? false))
 			throw new ArgumentException("Passed recorder is not attached to this reader", nameof(recorder));
-		recorder.stream.Write(this.readSlice[recorder.bufferPosition..(int) this.Reader.BytesConsumed]);
+		if(this.bytesShifted > recorder.bufferPosition)
+			recorder.stream.Write(this.readSlice[recorder.bufferPosition..this.bytesShifted]);
 		/* need to Exchange late for exception guarantee */
 		MemoryStream stream = Misc.Exchange(ref recorder.stream, null!);
 		stream.Position = 0;
