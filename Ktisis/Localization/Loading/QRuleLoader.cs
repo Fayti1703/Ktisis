@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using Ktisis.Data.Json;
 using Ktisis.Localization.QRules;
@@ -25,6 +29,46 @@ public static class QRuleLoader {
 	}
 
 	private static LoadContext.Frame BeginNextStatement(ref BlockBufferJsonReader reader, ref LoadContext context, bool fromPrevFrame) {
+		Debug.Assert(reader.Reader.TokenType == JsonTokenType.StartObject);
+		/* time to allocate some memory! */
+		JsonReaderState state = reader.Reader.CurrentState;
+		BlockBufferJsonReader.BufferRecorder recorder = reader.BeginBufferRecorder();
+		/* TODO?: Can we skip recording the `type` key, if it's the first key? (Potential difference between saved/unsaved here, not sure if we're okay with that) */
+		while(reader.Read()) {
+			switch(reader.Reader.TokenType) {
+				case JsonTokenType.PropertyName:
+					string propertyName = reader.Reader.GetString()!;
+					if(propertyName == "type") {
+						reader.Read();
+						if(reader.Reader.TokenType != JsonTokenType.String)
+							throw new Exception("Statement `type` must be a string!");
+
+						string typeName = reader.Reader.GetString()!;
+						QRuleStatement.Partial partial = CreatePartialOf(typeName, ref context);
+						reader.Read();
+
+						/* TODO: record starting depth */
+						return new LoadContext.Frame(
+							partial,
+							reader.FinishBufferRecorder(recorder),
+							state,
+							fromPrevFrame
+						);
+					}
+					reader.SkipIt();
+					break;
+				case JsonTokenType.EndObject:
+					throw new Exception("Statement is missing the `type` key!");
+				default:
+					Debug.Assert(false, "Should not be able to reach this point.");
+					throw new Exception("Should not be able to reach this point.");
+			}
+		}
+
+		throw new Exception("Unexpected end of JSON data");
+	}
+
+	private static QRuleStatement.Partial CreatePartialOf(string typeName, ref LoadContext context) {
 		throw new NotImplementedException();
 	}
 
