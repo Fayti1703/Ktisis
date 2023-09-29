@@ -143,11 +143,11 @@ public ref struct BlockBufferJsonReader {
 	}
 
 	private void acquireReader() {
-		if(this._stage != Stage.REINIT) {
+		if(this._stage != Stage.REINIT || this.readSlice.Length == 0) {
 			int preRead = 0;
 			Debug.Assert(this._stage != Stage.FINAL_READ, "Shouldn't be in final read here");
-			if(this._stage != Stage.INIT) {
-				if(this.Reader.BytesConsumed == 0)
+			if(this._stage != Stage.INIT && this._stage != Stage.REINIT) {
+				if(this.Reader.BytesConsumed == 0) {
 					throw new Exception("JSON value appears to exceed the bounds of the block buffer. Increase the buffer size or decrease your JSON value size.");
 				this.jsonState = this.Reader.CurrentState;
 				if(this.recorders != null) {
