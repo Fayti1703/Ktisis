@@ -33,6 +33,10 @@ public static class LocaleDataLoader {
 
 	public static LocaleMetaData LoadMeta(string technicalName) {
 		using Stream stream = GetResourceStream(technicalName);
+		return LoadMetaDataFromStream(technicalName, stream);
+	}
+
+	internal static LocaleMetaData LoadMetaDataFromStream(string technicalName, Stream stream) {
 		var reader = new BlockBufferJsonReader(stream, stackalloc byte[4096], readerOptions);
 
 		reader.Read();
@@ -138,6 +142,10 @@ public static class LocaleDataLoader {
 
 	private static LocaleData _LoadData(string technicalName, LocaleMetaData? meta) {
 		using Stream stream = GetResourceStream(technicalName);
+		return LoadDataFromStream(technicalName, meta, stream);
+	}
+
+	internal static LocaleData LoadDataFromStream(string technicalName, LocaleMetaData? meta, Stream stream) {
 		var reader = new BlockBufferJsonReader(stream, stackalloc byte[4096], readerOptions);
 
 		reader.Read();
