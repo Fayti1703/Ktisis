@@ -46,6 +46,7 @@ public ref struct BlockBufferJsonReader {
 
 	public Utf8JsonReader Reader = default;
 	public readonly bool IsFinal;
+	public bool Drained => this._stage == Stage.CLOSED;
 
 	private readonly Stream stream;
 	private readonly Span<byte> blockBuffer;
