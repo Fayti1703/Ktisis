@@ -19,6 +19,12 @@ public ref struct BlockBufferJsonReader {
 		internal readonly int readStart;
 		internal readonly int readEnd;
 
+		public BufferState(JsonReaderState readerState) {
+			this.jsonState = readerState;
+			this.readStart = 0;
+			this.readEnd = 0;
+		}
+
 		internal BufferState(ref BlockBufferJsonReader reader) {
 			this.jsonState = reader.saveState;
 			int sliceOffset = (int) Unsafe.ByteOffset(ref MemoryMarshal.GetReference(reader.blockBuffer), ref MemoryMarshal.GetReference(reader.readSlice));
