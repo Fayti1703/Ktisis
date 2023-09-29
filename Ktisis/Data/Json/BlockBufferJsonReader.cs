@@ -45,15 +45,18 @@ public ref struct BlockBufferJsonReader {
 	}
 
 	public Utf8JsonReader Reader = default;
+	public readonly bool IsFinal;
+
 	private readonly Stream stream;
 	private readonly Span<byte> blockBuffer;
 	private Span<byte> readSlice = default;
-	private JsonReaderState jsonState;
+
 	private Stage _stage = Stage.INIT;
-	private HashSet<BufferRecorder>? recorders = null;
+	private JsonReaderState jsonState;
+
 	private int bytesShifted = 0;
 	private JsonReaderState saveState;
-	public readonly bool IsFinal;
+	private HashSet<BufferRecorder>? recorders = null;
 
 	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderOptions options, bool isFinal = true)
 		: this(stream, blockBuffer, new JsonReaderState(options), isFinal) {}
