@@ -149,6 +149,7 @@ public ref struct BlockBufferJsonReader {
 	}
 
 	private void acquireReader() {
+		bool isFinalRead = false;
 		if(this._stage != Stage.REINIT || this.readSlice.Length == 0) {
 			int preRead = 0;
 			Debug.Assert(this._stage != Stage.FINAL_READ, "Shouldn't be in final read here");
@@ -171,11 +172,16 @@ public ref struct BlockBufferJsonReader {
 				preRead = remainingSlice.Length;
 			}
 
-			int read = this.stream.Read(this.blockBuffer[preRead..]);
+			Span<byte> newDataSlice = this.blockBuffer[preRead..];
+			int read = 0;
+			if(newDataSlice.Length > 0) {
+				read = this.stream.Read(this.blockBuffer[preRead..]);
+				isFinalRead = read == 0;
+			}
 			this.readSlice = this.blockBuffer[..(preRead + read)];
 		}
 
 		this._stage = this.readSlice.Length == 0 ? Stage.FINAL_READ : Stage.READING;
-		this.Reader = new Utf8JsonReader(this.readSlice, this.readSlice.Length == 0 && this.IsFinal, this.jsonState);
+		this.Reader = new Utf8JsonReader(this.readSlice, isFinalRead && this.IsFinal, this.jsonState);
 	}
 }
