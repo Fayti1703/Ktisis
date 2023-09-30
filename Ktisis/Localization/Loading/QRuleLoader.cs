@@ -100,6 +100,7 @@ public static class QRuleLoader {
 
 			if(result != null) {
 				/* Done with this frame */
+				frame.Dispose();
 				current = result;
 				/* TODO: Validate that we are at an EndObject/EndArray token at the correct depth. */
 				bool saveReaderToFrame = frame.fromPrevFrame;

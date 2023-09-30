@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
@@ -40,63 +41,56 @@ public struct LoadContext {
 
 
 	/** <summary>A single frame on the QRule load stack.</summary> */
-	internal class Frame {
+	internal struct Frame : IDisposable {
 		internal readonly QRuleStatement.Partial partial;
-		internal JsonReaderState initialState;
-		private readonly bool hasBuffer = false;
-		private FrameBuffer buffer;
+		internal BlockBufferJsonReader.BufferState bufferState;
+		internal MemoryStream? preLoad = null;
+		internal byte[]? blockBuffer = null;
 		internal readonly bool fromPrevFrame = false;
+
+		private const int MAXIMUM_BUFFER_SIZE = 4096;
+
+		/* TODO?: Use private array pool? */
+		private static ArrayPool<byte> bufferPool => ArrayPool<byte>.Shared;
 
 		internal Frame(QRuleStatement.Partial partial) {
 			this.partial = partial;
-			this.initialState = default;
-			this.hasBuffer = false;
+			this.bufferState = default;
 		}
 
 		internal Frame(QRuleStatement.Partial partial, MemoryStream preLoad, JsonReaderState state, bool fromPrevFrame) {
 			this.partial = partial;
-			this.initialState = state;
-			this.buffer = new FrameBuffer(preLoad);
-			this.hasBuffer = true;
+			this.bufferState = new BlockBufferJsonReader.BufferState(state);
+			this.preLoad = preLoad;
 			this.fromPrevFrame = fromPrevFrame;
 		}
 
 		internal BlockBufferJsonReader CreateReader() {
-			return this.hasBuffer ? this.buffer.CreateReader(this.initialState) : default;
+			if(this.preLoad == null)
+				return default; /* no preload data */
+			this.blockBuffer ??= bufferPool.Rent(Math.Min((int) this.preLoad.Length, MAXIMUM_BUFFER_SIZE));
+			return new BlockBufferJsonReader(this.preLoad!, this.blockBuffer, this.bufferState, false);
 		}
 
 		internal void SaveReader(ref BlockBufferJsonReader reader) {
-			if(this.hasBuffer)
-				this.buffer.SaveReader(ref reader);
+			if(this.blockBuffer == null) return;
+			if(reader.Drained)
+				this.ReleaseBuffer();
+			else
+				this.bufferState = reader.SaveBufferState();
 		}
 
-	}
-
-	/* TODO: Merge with main */
-	/* TODO: Replace separately allocated byte array with a pooled one (:hammer-and-sickle:) */
-	internal struct FrameBuffer {
-		internal bool ran = false;
-		internal readonly MemoryStream preLoad;
-		internal readonly byte[] blockBuffer = new byte[4096];
-		internal BlockBufferJsonReader.BufferState readerState;
-
-		public FrameBuffer(MemoryStream preLoad) {
-			this.preLoad = preLoad;
+		public void Dispose() {
+			this.ReleaseBuffer();
 		}
 
-		internal BlockBufferJsonReader CreateReader(JsonReaderState initialState) {
-			return this.ran ?
-				new BlockBufferJsonReader(this.preLoad, this.blockBuffer, this.readerState, false) :
-				new BlockBufferJsonReader(this.preLoad, this.blockBuffer, initialState, false);
-		}
+		private void ReleaseBuffer() {
+			if(this.blockBuffer != null) {
+				bufferPool.Return(this.blockBuffer);
+				this.blockBuffer = null;
+			}
 
-		internal void SaveReader(ref BlockBufferJsonReader reader) {
-			this.ran = true;
-			this.readerState = reader.SaveBufferState();
-			#if false
-			Console.WriteLine("Saving reader state: " + this.readerState.DumpState(this.blockBuffer));
-			#endif
+			this.preLoad = null;
 		}
 	}
-
 }
