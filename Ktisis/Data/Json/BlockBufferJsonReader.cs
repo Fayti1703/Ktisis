@@ -59,7 +59,6 @@ public ref struct BlockBufferJsonReader {
 	private Span<byte> readSlice = default;
 
 	private Stage _stage = Stage.INIT;
-	private JsonReaderState jsonState;
 
 	private int bytesShifted = 0;
 	private JsonReaderState saveState;
@@ -75,7 +74,6 @@ public ref struct BlockBufferJsonReader {
 	public BlockBufferJsonReader(Stream stream, Span<byte> blockBuffer, JsonReaderState state, bool isFinal = true) {
 		this.stream = stream;
 		this.blockBuffer = blockBuffer;
-		this.jsonState = state;
 		this.saveState = state;
 		this.IsFinal = isFinal;
 	}
@@ -150,6 +148,7 @@ public ref struct BlockBufferJsonReader {
 
 	private void acquireReader() {
 		bool isFinalRead = false;
+		JsonReaderState jsonState = this.saveState;
 		if(this._stage != Stage.REINIT || this.readSlice.Length == 0) {
 			int preRead = 0;
 			Debug.Assert(this._stage != Stage.FINAL_READ, "Shouldn't be in final read here");
@@ -157,7 +156,7 @@ public ref struct BlockBufferJsonReader {
 				if(this.Reader.BytesConsumed == 0 && this.readSlice.Length == this.blockBuffer.Length) {
 					throw new Exception("JSON value appears to exceed the bounds of the block buffer. Increase the buffer size or decrease your JSON value size.");
 				}
-				this.jsonState = this.Reader.CurrentState;
+				jsonState = this.Reader.CurrentState;
 				if(this.recorders != null) {
 					Span<byte> readSlice = this.readSlice[..(int) this.Reader.BytesConsumed];
 					foreach(BufferRecorder recorder in this.recorders) {
@@ -183,6 +182,6 @@ public ref struct BlockBufferJsonReader {
 		}
 
 		this._stage = this.readSlice.Length == 0 ? Stage.FINAL_READ : Stage.READING;
-		this.Reader = new Utf8JsonReader(this.readSlice, isFinalRead && this.IsFinal, this.jsonState);
+		this.Reader = new Utf8JsonReader(this.readSlice, isFinalRead && this.IsFinal, jsonState);
 	}
 }
