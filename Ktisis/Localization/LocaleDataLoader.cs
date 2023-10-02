@@ -20,7 +20,6 @@ public static class LocaleDataLoader {
 	};
 
 	private static Stream GetResourceStream(string technicalName) {
-		/* TODO: Type-scope once we get the namespaces sorted out */
 		Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(
 			typeof(LocaleDataLoader),
 			"Data." + technicalName + ".json"
