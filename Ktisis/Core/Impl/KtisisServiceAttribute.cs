@@ -1,4 +1,5 @@
 using System;
+using JetBrains.Annotations;
 
 namespace Ktisis.Core.Impl;
 
@@ -7,6 +8,8 @@ public enum ServiceFlags {
 	None = 0
 }
 
+[MeansImplicitUse(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
+[AttributeUsage(AttributeTargets.Class)]
 public class KtisisServiceAttribute : Attribute {
 	// Properties
 	
