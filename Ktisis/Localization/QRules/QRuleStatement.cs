@@ -7,6 +7,8 @@ namespace Ktisis.Localization.QRules;
 public interface QRuleStatement {
 	public void Run(ref QRuleContext context);
 
+	public bool ProducesValue { get; }
+
 	public interface Partial {
 		/**
 		 * <summary>Advance the reader to continue loading the statement, returning it if loading is complete.</summary>

@@ -18,6 +18,8 @@ public class CompoundStatement : QRuleStatement {
 		}
 	}
 
+	public bool ProducesValue => this.statements.Length != 0 && this.statements[^1].ProducesValue;
+
 	public class Partial : QRuleStatement.Partial {
 		private readonly List<QRuleStatement> statements = new();
 

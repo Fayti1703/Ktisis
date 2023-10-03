@@ -34,6 +34,8 @@ public class StringStatement : QRuleStatement {
 		context.ProvideValue(builder.ToString());
 	}
 
+	public bool ProducesValue => true;
+
 	private static StringPart[] ParseString(string value, ref QRuleContext context) {
 		List<StringPart> parts = new();
 		StringBuilder buffer = new(16);
