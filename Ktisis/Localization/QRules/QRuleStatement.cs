@@ -20,3 +20,12 @@ public interface QRuleStatement {
 		public QRuleStatement? Continue(ref DoubleBufferedJsonReader reader, ref LoadContext context, QRuleStatement? parseReturn);
 	}
 }
+
+[AttributeUsage(AttributeTargets.Class)]
+public class QRuleStatementAttribute : Attribute {
+	public readonly string TypeName;
+
+	public QRuleStatementAttribute(string typeName) {
+		this.TypeName = typeName;
+	}
+}

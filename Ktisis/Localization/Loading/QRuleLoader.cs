@@ -70,8 +70,28 @@ public static class QRuleLoader {
 		throw new QRuleInternalError("Unexpected end of JSON data.");
 	}
 
+	private static Dictionary<string, Type>? qRulePartials = null;
+
 	private static QRuleStatement.Partial CreatePartialOf(string typeName, ref LoadContext context) {
-		throw new NotImplementedException();
+		qRulePartials ??= new Dictionary<string, Type>(typeof(LocaleDataLoader).Assembly.GetTypes()
+			.Select(type => (type, metaData: type.GetCustomAttribute<QRuleStatementAttribute>()))
+			.Where(x => x.metaData != null)
+			.Select(x => {
+				Type partialType = x.type.GetNestedType("Partial") ?? throw new Exception($"QRuleStatement Type '{x.type.FullName}' is missing the 'Partial' inner type!");
+				if(!partialType.IsAssignableTo(typeof(QRuleStatement.Partial)))
+					throw new Exception($"QRuleStatement.Partial Type '{partialType.FullName}' does not implement {typeof(QRuleStatement.Partial).FullName}!");
+				return new KeyValuePair<string, Type>(
+					x.metaData!.TypeName,
+					partialType
+				);
+			})
+		);
+
+		if(!qRulePartials.TryGetValue(typeName, out Type? partialType)) {
+			throw new QRuleSyntaxError($"Unknown statement type '{typeName}'", ref context, ".type");
+		}
+
+		return (QRuleStatement.Partial) Activator.CreateInstance(partialType)!;
 	}
 
 	private static QRuleStatement LoadStatementInner(ref BlockBufferJsonReader reader, ref LoadContext context, LoadContext.Frame initialFrame) {
