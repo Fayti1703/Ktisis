@@ -189,8 +189,7 @@ public static class LocaleDataLoader {
 						break;
 					goto done;
 				case JsonTokenType.StartArray:
-					WarnUnsupported(technicalName, "array", currentKey!);
-					reader.SkipIt();
+					translationData.Add(currentKey!, QRuleLoader.LoadStatement(ref reader, currentKey!, technicalName));
 					break;
 				case JsonTokenType.True:
 				case JsonTokenType.False:
