@@ -61,11 +61,11 @@ public static class QRuleLoader {
 					throw new Exception("Statement is missing the `type` key!");
 				default:
 					Debug.Assert(false, "Should not be able to reach this point.");
-					throw new Exception("Should not be able to reach this point.");
+					throw new QRuleInternalError("Should not be able to reach this point.");
 			}
 		}
 
-		throw new Exception("Unexpected end of JSON data");
+		throw new QRuleInternalError("Unexpected end of JSON data.");
 	}
 
 	private static QRuleStatement.Partial CreatePartialOf(string typeName, ref LoadContext context) {

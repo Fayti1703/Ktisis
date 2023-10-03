@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Ktisis.Common.Utility;
@@ -34,7 +33,7 @@ public struct QRuleContext {
 
 	public void ProvideValue(string value) {
 		if(this.currentValue != null)
-			throw new Exception("Cannot provide a value here; a previous statement's value has not yet been consumed.");
+			throw new QRuleRuntimeError("Cannot provide a value here; a previous statement's value has not yet been consumed.");
 		this.currentValue = value;
 	}
 
@@ -42,7 +41,7 @@ public struct QRuleContext {
 
 	public string ConsumeValue() {
 		if(this.currentValue == null)
-			throw new Exception("Cannot consume a value here; the previous statement did not provide one.");
+			throw new QRuleRuntimeError("Cannot consume a value here; the previous statement did not provide one.");
 		return Misc.Exchange(ref this.currentValue, null)!;
 	}
 
