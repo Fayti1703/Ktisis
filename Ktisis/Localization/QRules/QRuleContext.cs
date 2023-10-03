@@ -20,14 +20,15 @@ public struct QRuleContext {
 		this.warnedVariables = warnedVariables;
 	}
 
-	public bool GetVariable(string key, [NotNullWhen(true)] out string? value) {
+	public bool GetVariable(string key, [NotNullWhen(true)] out string? value, bool allowMissing = false) {
 		value = null;
 		if(this.variables?.TryGetValue(key, out value) ?? false)
 			return true;
-
-		this.warnedVariables ??= new HashSet<string>();
-		if(!this.warnedVariables!.Add(key))
-			Logger.Warning("Unassigned variable {0} in key '{1}' for locale '{2}'", key, this.LocaleKey, this.LocaleMeta.TechnicalName);
+		if(!allowMissing) {
+			this.warnedVariables ??= new HashSet<string>();
+			if(!this.warnedVariables!.Add(key))
+				Logger.Warning("Unassigned variable {0} in key '{1}' for locale '{2}'", key, this.LocaleKey, this.LocaleMeta.TechnicalName);
+		}
 
 		return false;
 	}
