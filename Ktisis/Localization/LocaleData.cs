@@ -7,6 +7,7 @@ namespace Ktisis.Localization;
 public class LocaleData {
 	private readonly Dictionary<string, QRuleStatement> _translationData;
 	private readonly HashSet<string> warnedKeys = new();
+	private readonly Dictionary<string, HashSet<string>> warnedVariables = new();
 
 	public LocaleMetaData MetaData { get; }
 
@@ -23,8 +24,11 @@ public class LocaleData {
 			return key;
 		}
 
-		QRuleContext context = new(key, parameters, this.MetaData);
+		bool hadSet = this.warnedVariables.TryGetValue(key, out HashSet<string>? warnSet);
+		QRuleContext context = new(key, parameters, this.MetaData, warnSet);
 		statement.Run(ref context);
+		if(!hadSet && context.warnedVariables != null)
+			this.warnedVariables[key] = context.warnedVariables;
 		return context.ConsumeValue();
 	}
 

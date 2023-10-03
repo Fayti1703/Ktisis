@@ -10,18 +10,24 @@ public struct QRuleContext {
 	/** <summary>The current localization key being processed.</summary> */
 	public readonly string LocaleKey;
 	public readonly LocaleMetaData LocaleMeta;
+	internal HashSet<string>? warnedVariables;
 	private Dictionary<string, string>? variables;
 
-	public QRuleContext(string localeKey, Dictionary<string, string>? variables, LocaleMetaData localeMeta) {
+	public QRuleContext(string localeKey, Dictionary<string, string>? variables, LocaleMetaData localeMeta, HashSet<string>? warnedVariables) {
 		this.LocaleKey = localeKey;
 		this.variables = variables;
 		this.LocaleMeta = localeMeta;
+		this.warnedVariables = warnedVariables;
 	}
 
 	public bool GetVariable(string key, [NotNullWhen(true)] out string? value) {
 		value = null;
 		if(this.variables?.TryGetValue(key, out value) ?? false)
 			return true;
+
+		this.warnedVariables ??= new HashSet<string>();
+		if(!this.warnedVariables!.Add(key))
+			Logger.Warning("Unassigned variable {0} in key '{1}' for locale '{2}'", key, this.LocaleKey, this.LocaleMeta.TechnicalName);
 
 		return false;
 	}
