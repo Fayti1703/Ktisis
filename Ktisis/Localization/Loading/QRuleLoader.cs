@@ -23,8 +23,10 @@ public static class QRuleLoader {
 				LoadContext context = new(currentKey, technicalName, reader.Reader.CurrentDepth);
 				return LoadStatementInner(ref reader, ref context, BeginNextStatement(ref reader, ref context, false));
 			}
-			default:
-				throw new Exception("Cannot load a statement here (string, array or object required)");
+			default: {
+				LoadContext context = new(currentKey, technicalName, reader.Reader.CurrentDepth);
+				throw new QRuleSyntaxError("Cannot load a statement here (string, array or object required)", ref context);
+			}
 		}
 	}
 
@@ -41,7 +43,7 @@ public static class QRuleLoader {
 					if(propertyName == "type") {
 						reader.Read();
 						if(reader.Reader.TokenType != JsonTokenType.String)
-							throw new Exception("Statement `type` must be a string!");
+							throw new QRuleSyntaxError("Statement `type` must be a string!", ref context, ".type");
 
 						string typeName = reader.Reader.GetString()!;
 						QRuleStatement.Partial partial = CreatePartialOf(typeName, ref context);
@@ -58,7 +60,7 @@ public static class QRuleLoader {
 					reader.SkipIt();
 					break;
 				case JsonTokenType.EndObject:
-					throw new Exception("Statement is missing the `type` key!");
+					throw new QRuleSyntaxError("Statement is missing the `type` key!", ref context);
 				default:
 					Debug.Assert(false, "Should not be able to reach this point.");
 					throw new QRuleInternalError("Should not be able to reach this point.");
@@ -140,7 +142,7 @@ public static class QRuleLoader {
 					break;
 				}
 				default:
-					throw new Exception("Cannot load a statement here (string, array or object required)");
+					throw new QRuleSyntaxError("Statement expected here (string, array or object required)", ref context);
 			}
 		}
 
