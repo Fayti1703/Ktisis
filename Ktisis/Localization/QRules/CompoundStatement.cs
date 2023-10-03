@@ -27,6 +27,8 @@ public class CompoundStatement : QRuleStatement {
 			if(parseReturn != null) {
 				/* TODO?: Might be worth flattening out directly nested `CompoundStatement`s. */
 				this.statements.Add(parseReturn);
+				if(reader.Reader.TokenType != JsonTokenType.EndArray && parseReturn.ProducesValue)
+					throw new QRuleSemanticError("Non-final statement in CompoundStatement may not produce a value", ref context);
 				context.ExitElement();
 			}
 
